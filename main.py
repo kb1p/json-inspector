@@ -57,10 +57,10 @@ class MainWindow(Gui.QMainWindow):
     def setCurrentFile(self, fn):
         self.currentFile = fn
         t = self.currentFile if self.currentFile != None else "<no data>"
-        self.window().setWindowTitle("glTF navigator: %s" % t)
+        self.window().setWindowTitle("JSON inspector: %s" % t)
 
     def openScene(self):
-        fn, _ = Gui.QFileDialog.getOpenFileName(self, "Select input file", filter = "glTF files (*.gltf);;JSON files (*.json)")
+        fn, _ = Gui.QFileDialog.getOpenFileName(self, "Select input file", filter = "JSON files (*.json *.gltf)")
         if len(fn) > 0:
             with open(fn, "r") as fin:
                 d = json.load(fin)
@@ -72,7 +72,7 @@ class MainWindow(Gui.QMainWindow):
         if self.currentFile == None:
             Gui.QMessageBox.warning(self, "Warning", "No data was loaded - nothing to save")
             return
-        fn, _ = Gui.QFileDialog.getSaveFileName(self, "Select output file", filter = "glTF files (*.gltf);;JSON files (*.json)")
+        fn, _ = Gui.QFileDialog.getSaveFileName(self, "Select output file", filter = "JSON files (*.json *.gltf)")
         if len(fn) > 0:
             with open(fn, "w") as fout:
                 d = self.mdlStructure.getData()
