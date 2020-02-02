@@ -11,9 +11,9 @@ Not suitable for adding new elements or properties addition / removal.
 * PyQt5
 
 ## Running
-1. Install Qt5 & PyQt5. For Ubuntu this can be done as follows:
+1. Install Qt5 & PyQt5. For Ubuntu this can be done as follows:  
 `$ sudo apt install qt5-default python-pyqt5`
-2. Run main.py:
+2. Run main.py:  
 `$ python main.py`
 
 
