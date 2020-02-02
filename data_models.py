@@ -9,6 +9,10 @@ Created on Wed Jan 29 11:39:50 2020
 
 import PyQt5.QtCore as Core
 import itertools
+import re
+import sys
+
+VER3 = sys.version_info.major >= 3
 
 class TreeElement(object):
     ValueType = 0
@@ -115,6 +119,12 @@ class JSONTreeModel(Core.QAbstractItemModel):
     def getData(self):
         return serializeTree(self.dataRoot)
 
+# How to treat user input
+STRING_AFFINITY = ((re.compile(r"True|true"), lambda s: True),
+                   (re.compile(r"False|false"), lambda s: False),
+                   (re.compile(r"None|null"), lambda s: None),
+                   (re.compile(r"^-?\d+[.eE]\d+$"), float),
+                   (re.compile(r"^-?\d+$"), int))
 
 class JSONPropertiesModel(Core.QAbstractTableModel):
     __slots__ = "selection"
@@ -169,6 +179,12 @@ class JSONPropertiesModel(Core.QAbstractTableModel):
     def setData(self, mi, val, role):
         changed = False
         if role == Core.Qt.EditRole:
+            # additional parsing for strings
+            if isinstance(val, str if VER3 else unicode):
+                for r, t in STRING_AFFINITY:
+                    if r.match(val) != None:
+                        val = t(val)
+                        break
             if mi.column() == 0 and self.selection.type == TreeElement.ValueType:
                 self.selection.value = val
                 changed = True
