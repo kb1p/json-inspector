@@ -51,9 +51,11 @@ class MainWindow(Gui.QMainWindow):
         self.mdlProps = data_models.JSONPropertiesModel(self)
         self.tblProps.setModel(self.mdlProps)
 
-        self.tvStructure.pressed.connect(self.mdlProps.displayElement)
+        self.tvStructure.pressed.connect(self.showElement)
+        self.tvStructure.activated.connect(self.showElement)
 
         self.setCurrentFile(None)
+        self.statusBar().showMessage("No selection")
         self.resize(500, 450)
 
         self.config = Core.QSettings("kb1p", "json-inspector")
@@ -66,6 +68,16 @@ class MainWindow(Gui.QMainWindow):
         k = self.config.value("splitter/state")
         if k != None:
             self.splitter.restoreState(k)
+
+    def showElement(self, index):
+        self.mdlProps.displayElement(index)
+        idList = []
+        e = self.mdlProps.selection
+        while e != None:
+            idList.append(e.id)
+            e = e.parent
+        idList.reverse()
+        self.statusBar().showMessage(" / ".join(idList))
 
     def setCurrentFile(self, fn):
         self.currentFile = fn
