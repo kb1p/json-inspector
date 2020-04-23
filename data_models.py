@@ -31,7 +31,7 @@ class TreeElement(object):
         if self.type == TreeElement.ValueType:
             return str(self.value)
         elif self.type == TreeElement.ArrayType:
-            return "[ " + (", ".join(map(str, self.children)) if len(self.children) < 4 else "...") + " ]"
+            return "[ " + (", ".join(map(str, self.children)) if len(self.children) <= 4 else "...") + " ]"
         else:
             assert self.type == TreeElement.ObjectType
             return "{ ... }"

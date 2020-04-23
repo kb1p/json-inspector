@@ -6,12 +6,14 @@ Created on Tue Jan 28 19:58:07 2020
 """
 
 import sys
+import PyQt5.QtCore as Core
 import PyQt5.QtWidgets as Gui
 import data_models
 import json
 
 class MainWindow(Gui.QMainWindow):
-    __slots__ = "tvStructure", "tblProps", "mdlStructure", "mdlProps", "currentFile"
+    __slots__ = "tvStructure", "tblProps", "mdlStructure", "mdlProps", "currentFile", "config", \
+                "splitter"
 
     def __init__(self, p = None):
         Gui.QMainWindow.__init__(self, parent = p)
@@ -21,10 +23,10 @@ class MainWindow(Gui.QMainWindow):
         self.tvStructure.setHeaderHidden(True)
         self.tblProps = Gui.QTableView(self)
 
-        cw = Gui.QSplitter(self)
-        cw.addWidget(self.tvStructure)
-        cw.addWidget(self.tblProps)
-        self.setCentralWidget(cw)
+        self.splitter = Gui.QSplitter(self)
+        self.splitter.addWidget(self.tvStructure)
+        self.splitter.addWidget(self.tblProps)
+        self.setCentralWidget(self.splitter)
 
         # Menu
         mnuBar = Gui.QMenuBar(self)
@@ -54,6 +56,17 @@ class MainWindow(Gui.QMainWindow):
         self.setCurrentFile(None)
         self.resize(500, 450)
 
+        self.config = Core.QSettings("kb1p", "json-inspector")
+        k = self.config.value("main/geometry")
+        if k != None:
+            self.restoreGeometry(k)
+        k = self.config.value("main/state")
+        if k != None:
+            self.restoreState(k)
+        k = self.config.value("splitter/state")
+        if k != None:
+            self.splitter.restoreState(k)
+
     def setCurrentFile(self, fn):
         self.currentFile = fn
         t = self.currentFile if self.currentFile != None else "<no data>"
@@ -78,6 +91,12 @@ class MainWindow(Gui.QMainWindow):
                 d = self.mdlStructure.getData()
                 json.dump(d, fout, indent = 4, separators = (",", ": "), sort_keys = True)
                 self.setCurrentFile(fn)
+
+    def closeEvent(self, evt):
+        self.config.setValue("main/geometry", self.saveGeometry())
+        self.config.setValue("main/state", self.saveState())
+        self.config.setValue("splitter/state", self.splitter.saveState())
+        Gui.QMainWindow.closeEvent(self, evt)
 
 def main(args):
     app = Gui.QApplication(sys.argv)
