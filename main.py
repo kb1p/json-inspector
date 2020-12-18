@@ -8,12 +8,14 @@ Created on Tue Jan 28 19:58:07 2020
 import sys
 import PyQt5.QtCore as Core
 import PyQt5.QtWidgets as Gui
+import PyQt5.QtGui as GuiMisc
 import data_models
+import dialogs
 import json
 
 class MainWindow(Gui.QMainWindow):
     __slots__ = "tvStructure", "tblProps", "mdlStructure", "mdlProps", "currentFile", "config", \
-                "splitter"
+                "splitter", "editorDlg"
 
     def __init__(self, p = None):
         Gui.QMainWindow.__init__(self, parent = p)
@@ -21,6 +23,7 @@ class MainWindow(Gui.QMainWindow):
         # Work area
         self.tvStructure = Gui.QTreeView(self)
         self.tvStructure.setHeaderHidden(True)
+        self.tvStructure.setSelectionMode(Gui.QAbstractItemView.SingleSelection)
         self.tblProps = Gui.QTableView(self)
 
         self.splitter = Gui.QSplitter(self)
@@ -30,21 +33,16 @@ class MainWindow(Gui.QMainWindow):
 
         # Menu
         mnuBar = Gui.QMenuBar(self)
-        mnuFile = Gui.QMenu("File", self)
-        actOpen = Gui.QAction("Open", self)
-        #actSave = Gui.QAction("Save", self)
-        actSaveAs = Gui.QAction("Save as...", self)
-        actExit = Gui.QAction("Exit", self)
-        mnuFile.addAction(actOpen)
-        mnuFile.addAction(actSaveAs)
+        mnuFile = mnuBar.addMenu("File")
+        mnuFile.addAction("Open", self.openScene, GuiMisc.QKeySequence("Ctrl+O"))
+        mnuFile.addAction("Save as...", self.saveSceneAs, GuiMisc.QKeySequence("Ctrl+S"))
         mnuFile.addSeparator()
-        mnuFile.addAction(actExit)
-        mnuBar.addMenu(mnuFile)
+        mnuFile.addAction("Exit", self.close)
+        mnuElem = mnuBar.addMenu("Element")
+        # mnuElem.addAction("Add sub-element", self.addElement, GuiMisc.QKeySequence("Ctrl+A"))
+        mnuElem.addAction("Edit JSON code", self.editElement, GuiMisc.QKeySequence("Ctrl+E"))
+        mnuElem.addAction("Remove", self.removeElement, GuiMisc.QKeySequence("Ctrl+R"))
         self.setMenuBar(mnuBar)
-
-        actOpen.triggered.connect(self.openScene)
-        actSaveAs.triggered.connect(self.saveSceneAs)
-        actExit.triggered.connect(self.close)
 
         self.mdlStructure = data_models.JSONTreeModel(self)
         self.tvStructure.setModel(self.mdlStructure)
@@ -68,6 +66,8 @@ class MainWindow(Gui.QMainWindow):
         if k != None:
             self.splitter.restoreState(k)
 
+        self.editorDlg = dialogs.EditorDialog(self, self.config)
+
     def showElement(self, index, prevIndex):
         self.mdlProps.displayElement(index)
         idList = []
@@ -77,6 +77,48 @@ class MainWindow(Gui.QMainWindow):
             e = e.parent
         idList.reverse()
         self.statusBar().showMessage(" / ".join(idList))
+
+    def editElement(self):
+        idx = self.tvStructure.selectionModel().currentIndex()
+        try:
+            if not idx.isValid():
+                raise RuntimeError("Element is not selected")
+
+            elm = idx.internalPointer()
+            jsIn = data_models.serializeTree(elm)
+            strIn = json.dumps(jsIn, indent = 4, separators = (",", ": "), sort_keys = True)
+            strOut = self.editorDlg.requestText(strIn)
+            if strOut != strIn:
+                jsOut = json.loads(strOut)
+                self.mdlStructure.layoutAboutToBeChanged.emit()
+                data_models.rebuildTree(jsOut, elm)
+                self.mdlStructure.layoutChanged.emit()
+                self.mdlProps.displayElement(idx)
+        except json.JSONDecodeError as err:
+            line = err.doc.splitlines()[err.lineno - 1]
+            Gui.QMessageBox.critical(self, \
+                                     "JSON syntax error", \
+                                     "Illegal JSON syntax: %s.\nMalformed line:\n%s" % \
+                                     (err.msg, line))
+        except RuntimeError as err:
+            Gui.QMessageBox.critical(self, "Error", str(err))
+
+    def removeElement(self):
+        idx = self.tvStructure.selectionModel().currentIndex()
+        try:
+            if not idx.isValid():
+                raise RuntimeError("Illegal element selected")
+            if not idx.parent().isValid():
+                raise RuntimeError("Cannot remove root element")
+            name = str(idx.data())
+            if Gui.QMessageBox.question(self, \
+                                        "Confirmation required", \
+                                        "Are you sure want to remove element %s?" % name) == Gui.QMessageBox.Yes:
+                parIdx = idx.parent()
+                self.mdlStructure.removeRow(idx.row(), parIdx)
+                self.tvStructure.selectionModel().setCurrentIndex(parIdx, Core.QItemSelectionModel.Current)
+        except RuntimeError as err:
+            Gui.QMessageBox.critical(self, "Error", str(err))
 
     def setCurrentFile(self, fn):
         self.currentFile = fn

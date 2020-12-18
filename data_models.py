@@ -49,6 +49,15 @@ def buildTree(jsobj, id, par = None):
         n.value = jsobj
     return n
 
+def rebuildTree(jsobj, elm):
+    t = buildTree(jsobj, elm.id, elm.parent)
+    elm.type = t.type
+    elm.value = t.value
+    elm.children = t.children
+    t.children = None
+    for c in elm.children:
+        c.parent = elm
+
 def serializeTree(node):
     if node.type == TreeElement.ArrayType:
         return [serializeTree(subNode) for subNode in node.children]
@@ -70,12 +79,10 @@ class JSONTreeModel(Core.QAbstractItemModel):
             re = self.dataRoot
         else:
             elm = pmi.internalPointer()
-            assert elm.type != TreeElement.ValueType
-            assert row < len(elm.children)
-            re = elm.children[row]
+            if elm.type != TreeElement.ValueType and row < len(elm.children):
+                re = elm.children[row]
 
-        i = self.createIndex(row, col, re)
-        return i
+        return self.createIndex(row, col, re) if re != None else Core.QModelIndex()
 
     def parent(self, mi):
         idx = Core.QModelIndex()
@@ -111,6 +118,24 @@ class JSONTreeModel(Core.QAbstractItemModel):
             v = "%s (%d)" % (e.id, len(e.children))
 
         return Core.QVariant(v)
+
+    def removeRows(self, row, count, parInd):
+        assert parInd.isValid()
+        pelm = parInd.internalPointer()
+        if row + count - 1 >= len(pelm.children):
+            return False
+        self.beginRemoveRows(parInd, row, row + count - 1)
+        i = 0
+        while i < count:
+            del pelm.children[row + i]
+            i += 1
+        if pelm.type == TreeElement.ArrayType:
+            i = 0
+            for c in pelm.children:
+                c.id = "%s[%d]" % (pelm.id, i)
+                i += 1
+        self.endRemoveRows()
+        return True
 
     def loadData(self, jsonData):
         self.dataRoot = buildTree(jsonData, "Model")
@@ -196,5 +221,6 @@ class JSONPropertiesModel(Core.QAbstractTableModel):
         return changed
 
     def displayElement(self, idx):
+        self.layoutAboutToBeChanged.emit()
         self.selection = idx.internalPointer() if idx != None else None
-        self.modelReset.emit()
+        self.layoutChanged.emit()
