@@ -51,8 +51,7 @@ class MainWindow(Gui.QMainWindow):
         self.mdlProps = data_models.JSONPropertiesModel(self)
         self.tblProps.setModel(self.mdlProps)
 
-        self.tvStructure.pressed.connect(self.showElement)
-        self.tvStructure.activated.connect(self.showElement)
+        self.tvStructure.selectionModel().currentChanged.connect(self.showElement)
 
         self.setCurrentFile(None)
         self.statusBar().showMessage("No selection")
@@ -69,7 +68,7 @@ class MainWindow(Gui.QMainWindow):
         if k != None:
             self.splitter.restoreState(k)
 
-    def showElement(self, index):
+    def showElement(self, index, prevIndex):
         self.mdlProps.displayElement(index)
         idList = []
         e = self.mdlProps.selection
