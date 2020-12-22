@@ -221,6 +221,6 @@ class JSONPropertiesModel(Core.QAbstractTableModel):
         return changed
 
     def displayElement(self, idx):
-        self.layoutAboutToBeChanged.emit()
+        self.beginResetModel()
         self.selection = idx.internalPointer() if idx != None else None
-        self.layoutChanged.emit()
+        self.endResetModel()
