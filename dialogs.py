@@ -39,7 +39,7 @@ def queryType(par):
     return resTy
 
 class EditorDialog(Gui.QDialog):
-    __slots__ = "config", "editor"
+    __slots__ = "config", "editor", "elementName"
 
     def __init__(self, par, cfg):
         Gui.QDialog.__init__(self, par)
@@ -47,12 +47,15 @@ class EditorDialog(Gui.QDialog):
 
         self.setWindowTitle("JSON editor")
         lyt = Gui.QVBoxLayout()
-        lyt.addWidget(Gui.QLabel("Enter JSON code for the element", self))
+        lyt.addWidget(Gui.QLabel("Enter JSON code for the element:", self))
+        self.elementName = Gui.QLabel("---")
+        self.elementName.setWordWrap(True)
         self.editor = Gui.QTextEdit(self)
         self.editor.setAcceptRichText(False)
         self.editor.setLineWrapMode(Gui.QTextEdit.NoWrap)
         fnt = GuiMisc.QFontDatabase.systemFont(GuiMisc.QFontDatabase.FixedFont)
         self.editor.setFont(fnt)
+        lyt.addWidget(self.elementName)
         lyt.addWidget(self.editor)
         bbox = Gui.QDialogButtonBox(Gui.QDialogButtonBox.Ok | Gui.QDialogButtonBox.Cancel, self)
         bbox.accepted.connect(self.accept)
@@ -60,7 +63,8 @@ class EditorDialog(Gui.QDialog):
         lyt.addWidget(bbox)
         self.setLayout(lyt)
 
-    def requestText(self, initText = None, readOnly = False):
+    def requestText(self, elmNm, initText = None, readOnly = False):
+        self.elementName.setText(elmNm)
         if initText != None:
             self.editor.setPlainText(initText)
         self.editor.setReadOnly(readOnly)

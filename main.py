@@ -70,13 +70,8 @@ class MainWindow(Gui.QMainWindow):
 
     def showElement(self, index, prevIndex):
         self.mdlProps.displayElement(index)
-        idList = []
-        e = self.mdlProps.selection
-        while e != None:
-            idList.append(e.id)
-            e = e.parent
-        idList.reverse()
-        self.statusBar().showMessage(" / ".join(idList))
+        assert self.mdlProps.selection != None
+        self.statusBar().showMessage(self.mdlProps.selection.fullPath())
 
     def editElement(self):
         idx = self.tvStructure.selectionModel().currentIndex()
@@ -87,7 +82,7 @@ class MainWindow(Gui.QMainWindow):
             elm = idx.internalPointer()
             jsIn = data_models.serializeTree(elm)
             strIn = json.dumps(jsIn, indent = 4, separators = (",", ": "), sort_keys = True)
-            strOut = self.editorDlg.requestText(strIn)
+            strOut = self.editorDlg.requestText(elm.fullPath(), strIn)
             if strOut != strIn:
                 jsOut = json.loads(strOut)
                 self.mdlStructure.layoutAboutToBeChanged.emit()

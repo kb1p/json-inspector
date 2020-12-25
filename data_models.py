@@ -36,6 +36,15 @@ class TreeElement(object):
             assert self.type == TreeElement.ObjectType
             return "{ ... }"
 
+    def fullPath(self):
+        idList = []
+        e = self
+        while e != None:
+            idList.append(e.id)
+            e = e.parent
+        idList.reverse()
+        return " / ".join(idList)
+
 def buildTree(jsobj, id, par = None):
     n = TreeElement(id, par)
     if isinstance(jsobj, dict):
